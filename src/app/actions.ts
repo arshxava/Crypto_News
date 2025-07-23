@@ -3,6 +3,8 @@
 
 import type { Article } from '@/lib/types';
 import Parser from 'rss-parser';
+import { processArticle } from '@/ai/flows/process-article-flow';
+
 
 // Helper function for NewsAPI
 async function getNewsApiArticles(query: string, apiKey: string): Promise<Article[]> {
@@ -124,6 +126,7 @@ async function getRssArticles(query: string): Promise<Article[]> {
     const lowerCaseQuery = query.toLowerCase();
     
     return allRssArticles.filter(article => {
+        if (!article.title || !article.content) return false;
         const titleMatch = article.title.toLowerCase().includes(lowerCaseQuery);
         const contentMatch = article.content.toLowerCase().includes(lowerCaseQuery);
         const keywordMatch = article.keywords.includes(lowerCaseQuery);
@@ -166,14 +169,39 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
         }
 
         const results = await Promise.allSettled(allPromises);
-        const allArticles = results
+        let allArticles = results
             .filter(result => result.status === 'fulfilled')
             .flatMap(result => (result as PromiseFulfilledResult<Article[]>).value);
         
         // Sort all articles by date, descending
         allArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-        return { articles: allArticles };
+        // Take the top 12 articles to avoid excessive AI processing
+        allArticles = allArticles.slice(0, 12);
+
+        // Process articles with AI
+        const processedArticles = await Promise.all(
+            allArticles.map(async (article) => {
+                try {
+                    const processed = await processArticle({
+                        title: article.title,
+                        content: article.content,
+                    });
+                    return {
+                        ...article,
+                        content: processed.rewrittenContent,
+                        imageUrl: processed.generatedImageUrl,
+                    };
+                } catch (e) {
+                    console.error(`Failed to process article with AI: ${article.title}`, e);
+                    // Return the original article if AI processing fails
+                    return article;
+                }
+            })
+        );
+
+
+        return { articles: processedArticles };
 
     } catch (e: any) {
         console.error("Error fetching articles:", e.message);

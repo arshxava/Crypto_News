@@ -50,12 +50,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
         )}
       </CardHeader>
       <CardContent className="flex-grow">
-        {isPlaceholder ? (
-            <div className="relative h-full max-h-[160px] overflow-hidden">
-                <p className="text-sm text-muted-foreground">{article.content}</p>
-            </div>
-        ) : (
-          <div className="aspect-video overflow-hidden rounded-md">
+        <div className="aspect-video overflow-hidden rounded-md">
             <Image
               src={article.imageUrl}
               alt={article.title}
@@ -63,26 +58,9 @@ export function ArticleCard({ article }: ArticleCardProps) {
               height={400}
               className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
               data-ai-hint="crypto technology"
-              onError={(e) => {
-                  // In case of image loading error, fallback to placeholder logic
-                  e.currentTarget.parentElement?.parentElement?.classList.add('no-image');
-              }}
             />
           </div>
-        )}
       </CardContent>
-      <style jsx>{`
-        .no-image .aspect-video {
-            display: none;
-        }
-         .no-image::before {
-            content: '';
-            display: block;
-            padding-top: 56.25%; /* 16:9 aspect ratio */
-            background: linear-gradient(to bottom right, hsl(var(--primary-foreground)), hsl(var(--secondary)));
-            border-radius: var(--radius);
-        }
-      `}</style>
       <CardFooter className="mt-auto flex justify-between gap-2 pt-4">
         <SummarizeDialog content={article.content} title={article.title} />
         <Button asChild variant="ghost" size="sm">
