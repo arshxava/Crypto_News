@@ -53,7 +53,6 @@ export function ArticleCard({ article }: ArticleCardProps) {
         {isPlaceholder ? (
             <div className="relative h-full max-h-[160px] overflow-hidden">
                 <p className="text-sm text-muted-foreground">{article.content}</p>
-                <div className="absolute bottom-0 left-0 h-full w-full bg-gradient-to-t from-card to-transparent" />
             </div>
         ) : (
           <div className="aspect-video overflow-hidden rounded-md">
