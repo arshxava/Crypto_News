@@ -1,76 +1,9 @@
-import type { Article } from './types';
-
-export const articles: Article[] = [
-  {
-    id: 1,
-    title: 'Bitcoin Hits New All-Time High Amidst Market Frenzy',
-    source: 'CoinDesk',
-    imageUrl: 'https://placehold.co/600x400.png',
-    url: '#',
-    content: `Bitcoin surged past $70,000 today, setting a new all-time high and igniting a wave of excitement across the cryptocurrency market. Analysts attribute the rally to increased institutional investment and a positive outlook on upcoming regulatory changes. The digital currency's market capitalization has now surpassed that of several major global companies.`,
-    keywords: ['bitcoin', 'regulation'],
-  },
-  {
-    id: 2,
-    title: 'Ethereum "Dencun" Upgrade Goes Live, Slashing Layer-2 Fees',
-    source: 'Decrypt',
-    imageUrl: 'https://placehold.co/600x400.png',
-    url: '#',
-    content: `The highly anticipated "Dencun" upgrade for the Ethereum network has successfully launched. This update introduces "proto-danksharding," a mechanism designed to significantly reduce transaction fees for Layer-2 scaling solutions like Arbitrum and Optimism. Early data shows a dramatic drop in costs, making the Ethereum ecosystem more accessible for users and developers.`,
-    keywords: ['ethereum', 'defi'],
-  },
-  {
-    id: 3,
-    title: 'The Rise of Ordinals: NFTs Find a New Home on Bitcoin',
-    source: 'Cointelegraph',
-    imageUrl: 'https://placehold.co/600x400.png',
-    url: '#',
-    content: `A new wave of innovation has arrived on the Bitcoin blockchain with the advent of Ordinals and Inscriptions. This technology allows for the creation of unique digital artifacts, akin to NFTs, directly on individual satoshis. The development has sparked both enthusiasm for new use cases and debate about its impact on Bitcoin's primary function as a peer-to-peer electronic cash system.`,
-    keywords: ['bitcoin', 'nfts'],
-  },
-  {
-    id: 4,
-    title: 'Binance Blog: Navigating the Complex World of Crypto Regulation',
-    source: 'Binance Blog',
-    imageUrl: 'https://placehold.co/600x400.png',
-    url: '#',
-    content: `As the digital asset space matures, regulatory frameworks are becoming a key focus for governments worldwide. In our latest post, we explore the different approaches being taken by various jurisdictions, from the comprehensive MiCA framework in Europe to the patchwork of rules in the United States. Understanding this landscape is crucial for both investors and builders in the crypto industry.`,
-    keywords: ['regulation'],
-  },
-  {
-    id: 5,
-    title: 'Solana DeFi Ecosystem Sees Explosive Growth in Q1 2024',
-    source: 'CryptoPanic',
-    imageUrl: 'https://placehold.co/600x400.png',
-    url: '#',
-    content: `The decentralized finance (DeFi) ecosystem on the Solana blockchain has experienced a remarkable surge in activity and value locked in the first quarter of 2024. Driven by low fees and high throughput, projects in lending, decentralized exchanges (DEXs), and liquid staking are attracting a flood of new users. This growth positions Solana as a major competitor in the DeFi space.`,
-    keywords: ['defi'],
-  },
-  {
-    id: 6,
-    title: 'A Guide to Yield Farming in the Evolving DeFi Landscape',
-    source: 'CoinDesk',
-    imageUrl: 'https://placehold.co/600x400.png',
-    url: '#',
-    content: `Yield farming remains a popular strategy for DeFi users to earn passive income on their crypto holdings. However, the strategies and platforms are constantly evolving. This guide covers the basics of providing liquidity, the risks involved, and how to identify promising opportunities in the current market, with a focus on sustainable and secure protocols.`,
-    keywords: ['defi', 'ethereum'],
-  },
-  {
-    id: 7,
-    title: 'SEC Delays Decision on Spot Ethereum ETF Applications',
-    source: 'Decrypt',
-    imageUrl: 'https://placehold.co/600x400.png',
-    url: '#',
-    content: `The U.S. Securities and Exchange Commission (SEC) has once again postponed its decision on several applications for a spot Ethereum exchange-traded fund (ETF). The delay has tempered some of the market's recent optimism, with analysts now eyeing the next deadline in late May. The regulatory agency cited the need for more time to consider the proposals and their potential impact.`,
-    keywords: ['ethereum', 'regulation'],
-  },
-  {
-    id: 8,
-    title: 'Are Pudgy Penguins the New Blue-Chip NFT Collection?',
-    source: 'Cointelegraph',
-    imageUrl: 'https://placehold.co/600x400.png',
-    url: '#',
-    content: `The Pudgy Penguins NFT collection has seen a massive resurgence in popularity and floor price, leading many to consider it a "blue-chip" asset in the JPEG space. With a strong community, a well-executed merchandise line, and a focus on brand building, the project is setting a new standard for what an NFT collection can achieve beyond just digital art.`,
-    keywords: ['nfts'],
-  },
-];
+export type Article = {
+  id: number;
+  title: string;
+  source: string;
+  imageUrl: string;
+  url: string;
+  content: string;
+  keywords: string[];
+};
