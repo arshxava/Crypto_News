@@ -32,6 +32,7 @@ async function getNewsApiArticles(query: string, apiKey: string): Promise<Articl
             content: article.content,
             keywords: query === 'cryptocurrency' ? [] : [query.toLowerCase()],
             publishedAt: article.publishedAt,
+            type: 'news' as const,
         }));
 }
 
@@ -54,6 +55,7 @@ async function getCryptoPanicArticles(query: string, apiKey: string): Promise<Ar
         content: `Title: ${article.title}`, // Content is not provided, use title as placeholder
         keywords: (article.currencies || []).map((c: any) => c.code.toLowerCase()),
         publishedAt: article.created_at,
+        type: 'news' as const,
     }));
 }
 
@@ -81,6 +83,7 @@ async function getCryptoCompareArticles(query: string, apiKey: string): Promise<
         content: article.body,
         keywords: (article.categories || '').split(',').map((c:string) => c.trim().toLowerCase()),
         publishedAt: new Date(article.published_on * 1000).toISOString(),
+        type: 'news' as const,
     }));
 }
 
@@ -88,29 +91,30 @@ async function getCryptoCompareArticles(query: string, apiKey: string): Promise<
 async function getRssArticles(query: string): Promise<Article[]> {
     const parser = new Parser();
     const rssFeeds = [
-        'https://cointelegraph.com/rss',
-        'https://cryptoslate.com/feed/',
-        'https://www.binance.com/en/blog/feed',
-        'https://bitcoinmagazine.com/feed'
-    ];
+        { url: 'https://cointelegraph.com/rss', type: 'news' },
+        { url: 'https://cryptoslate.com/feed/', type: 'news' },
+        { url: 'https://www.binance.com/en/blog/feed', type: 'blog' },
+        { url: 'https://bitcoinmagazine.com/feed', type: 'blog' }
+    ] as const;
     let allRssArticles: Article[] = [];
 
     for (const feedUrl of rssFeeds) {
         try {
-            const feed = await parser.parseURL(feedUrl);
+            const feed = await parser.parseURL(feedUrl.url);
             const articles = feed.items.map(item => ({
                 id: item.link || item.guid || item.id,
                 title: item.title || '',
-                source: new URL(feed.link || feedUrl).hostname,
+                source: new URL(feed.link || feedUrl.url).hostname,
                 imageUrl: item.enclosure?.url || `https://placehold.co/600x400.png`,
                 url: item.link || '',
                 content: item.contentSnippet || item.content || item.summary || '',
                 keywords: (item.categories || []).map(c => c.toLowerCase()),
                 publishedAt: item.isoDate || new Date().toISOString(),
+                type: feedUrl.type
             }));
             allRssArticles.push(...articles);
         } catch (error) {
-            console.error(`Failed to fetch or parse RSS feed: ${feedUrl}`, error);
+            console.error(`Failed to fetch or parse RSS feed: ${feedUrl.url}`, error);
         }
     }
 

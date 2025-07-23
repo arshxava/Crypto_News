@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -15,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowUpRight, Calendar } from 'lucide-react';
 import { SummarizeDialog } from './summarize-dialog';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface ArticleCardProps {
   article: Article;
@@ -24,9 +26,17 @@ export function ArticleCard({ article }: ArticleCardProps) {
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
       <CardHeader>
-        <Badge variant="secondary" className="mb-2 w-fit">
-          {article.source}
-        </Badge>
+        <div className="mb-2 flex flex-wrap gap-2">
+            <Badge variant="secondary" className="w-fit">
+              {article.source}
+            </Badge>
+            <Badge variant={article.type === 'blog' ? 'default' : 'outline'} className={cn(
+                "w-fit capitalize",
+                article.type === 'blog' && "bg-accent text-accent-foreground"
+            )}>
+              {article.type}
+            </Badge>
+        </div>
         <CardTitle className="text-lg font-bold leading-tight">
           {article.title}
         </CardTitle>

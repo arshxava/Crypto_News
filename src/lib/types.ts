@@ -1,3 +1,4 @@
+
 export type Article = {
   id: string;
   title: string;
@@ -7,4 +8,5 @@ export type Article = {
   content: string;
   keywords: string[];
   publishedAt: string;
+  type: 'news' | 'blog';
 };
