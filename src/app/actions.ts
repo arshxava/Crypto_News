@@ -165,8 +165,10 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
             return { error: "No API keys are configured. Please add at least one to your .env file to get news from APIs." };
         }
 
-        const results = await Promise.all(allPromises);
-        const allArticles = results.flat();
+        const results = await Promise.allSettled(allPromises);
+        const allArticles = results
+            .filter(result => result.status === 'fulfilled')
+            .flatMap(result => (result as PromiseFulfilledResult<Article[]>).value);
         
         // Sort all articles by date, descending
         allArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
