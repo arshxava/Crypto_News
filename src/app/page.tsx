@@ -1,7 +1,8 @@
+
 "use client";
 
 import * as React from 'react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, startTransition } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -9,51 +10,10 @@ import { ArticleCard } from '@/components/article-card';
 import { Search, Rss } from 'lucide-react';
 import type { Article } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getArticles } from './actions';
 
 const FILTERS = ['All', 'Bitcoin', 'Ethereum', 'NFTs', 'DeFi', 'Regulation'];
 
-async function getArticles(query: string) {
-  try {
-    const res = await fetch(`https://newsapi.org/v2/everything?q=${query}&sortBy=publishedAt&language=en&apiKey=${process.env.NEXT_PUBLIC_NEWS_API_KEY}`);
-
-    if (!res.ok) {
-      if (res.status === 401) {
-        console.error("Authentication error: Please check your NewsAPI key in the .env file.");
-        return { error: "Invalid API key. Please check your configuration." };
-      }
-      throw new Error(`Failed to fetch articles. Status: ${res.status}`);
-    }
-
-    const data = await res.json();
-    
-    if (data.status === 'error') {
-      console.error("NewsAPI Error:", data.message);
-      return { error: `NewsAPI Error: ${data.message}` };
-    }
-
-    // Filter out articles that have "[Removed]" as title or have no image/content
-    const validArticles = data.articles.filter((article: any) => 
-        article.title && article.title !== "[Removed]" &&
-        article.content &&
-        article.urlToImage
-    );
-
-    return {
-      articles: validArticles.map((article: any, index: number) => ({
-        id: index + 1,
-        title: article.title,
-        source: article.source.name,
-        imageUrl: article.urlToImage,
-        url: article.url,
-        content: article.content,
-        keywords: query === 'cryptocurrency' ? [] : [query.toLowerCase()],
-      }))
-    };
-  } catch(e: any) {
-    console.error("Error fetching articles:", e.message);
-    return { error: "Failed to fetch news. Please try again later." };
-  }
-}
 
 export default function Home() {
     const [articles, setArticles] = useState<Article[]>([]);
@@ -67,13 +27,16 @@ export default function Home() {
             setLoading(true);
             const query = activeFilter === 'All' ? 'cryptocurrency' : activeFilter;
             const result = await getArticles(query);
-            setArticles(result.articles || []);
-            setFetchError(result.error);
-            setLoading(false);
+            
+            startTransition(() => {
+                setArticles(result.articles || []);
+                setFetchError(result.error);
+                setLoading(false);
+            });
         };
         fetchArticles();
     }, [activeFilter]);
-    
+
     const filteredArticles = useMemo(() => {
         if (!searchTerm) {
             return articles;
