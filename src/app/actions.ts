@@ -49,7 +49,6 @@ async function getCryptoPanicArticles(query: string, apiKey: string): Promise<Ar
         id: article.url,
         title: article.title,
         source: article.source.domain,
-        // CryptoPanic doesn't provide a direct image URL, so we use a placeholder.
         imageUrl: `https://placehold.co/600x400.png`,
         url: article.url,
         content: `Title: ${article.title}`, // Content is not provided, use title as placeholder
@@ -98,36 +97,38 @@ async function getRssArticles(query: string): Promise<Article[]> {
     ] as const;
     let allRssArticles: Article[] = [];
 
-    for (const feedUrl of rssFeeds) {
+    for (const feed of rssFeeds) {
         try {
-            const feed = await parser.parseURL(feedUrl.url);
-            const articles = feed.items.map(item => ({
+            const parsedFeed = await parser.parseURL(feed.url);
+            const articles = parsedFeed.items.map(item => ({
                 id: item.link || item.guid || item.id,
                 title: item.title || '',
-                source: new URL(feed.link || feedUrl.url).hostname,
+                source: new URL(parsedFeed.link || feed.url).hostname,
                 imageUrl: item.enclosure?.url || `https://placehold.co/600x400.png`,
                 url: item.link || '',
                 content: item.contentSnippet || item.content || item.summary || '',
                 keywords: (item.categories || []).map(c => c.toLowerCase()),
                 publishedAt: item.isoDate || new Date().toISOString(),
-                type: feedUrl.type
+                type: feed.type
             }));
             allRssArticles.push(...articles);
         } catch (error) {
-            console.error(`Failed to fetch or parse RSS feed: ${feedUrl.url}`, error);
+            console.error(`Failed to fetch or parse RSS feed: ${feed.url}`, error);
         }
     }
-
-    if (query !== 'cryptocurrency') {
-        const lowerCaseQuery = query.toLowerCase();
-        return allRssArticles.filter(article => 
-            article.title.toLowerCase().includes(lowerCaseQuery) ||
-            article.content.toLowerCase().includes(lowerCaseQuery) ||
-            article.keywords.includes(lowerCaseQuery)
-        );
-    }
     
-    return allRssArticles;
+    if (query.toLowerCase() === 'cryptocurrency') {
+        return allRssArticles;
+    }
+
+    const lowerCaseQuery = query.toLowerCase();
+    
+    return allRssArticles.filter(article => {
+        const titleMatch = article.title.toLowerCase().includes(lowerCaseQuery);
+        const contentMatch = article.content.toLowerCase().includes(lowerCaseQuery);
+        const keywordMatch = article.keywords.includes(lowerCaseQuery);
+        return titleMatch || contentMatch || keywordMatch;
+    });
 }
 
 
