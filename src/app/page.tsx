@@ -11,7 +11,13 @@ import { Search, Rss } from 'lucide-react';
 import type { Article } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getArticles } from './actions';
-import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const FILTERS = ['All', 'Bitcoin', 'Ethereum', 'NFTs', 'DeFi', 'Regulation'];
 const CONTENT_TYPE_FILTERS = ['All', 'News', 'Blogs'];
@@ -90,21 +96,8 @@ export default function Home() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
                  <div className="flex flex-wrap gap-2">
-                    {CONTENT_TYPE_FILTERS.map((filter) => (
-                        <Button
-                        key={filter}
-                        variant={contentTypeFilter === filter ? 'default' : 'outline'}
-                        onClick={() => setContentTypeFilter(filter)}
-                        className="rounded-full"
-                        >
-                        {filter}
-                        </Button>
-                    ))}
-                </div>
-                <Separator />
-                <div className="flex flex-wrap gap-2">
                     {FILTERS.map((filter) => (
                         <Button
                         key={filter}
@@ -115,6 +108,18 @@ export default function Home() {
                         {filter}
                         </Button>
                     ))}
+                </div>
+                <div className="w-full md:w-48">
+                    <Select value={contentTypeFilter} onValueChange={setContentTypeFilter}>
+                        <SelectTrigger className="w-full rounded-full">
+                            <SelectValue placeholder="Filter by type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {CONTENT_TYPE_FILTERS.map((filter) => (
+                                <SelectItem key={filter} value={filter}>{filter}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
           </div>
