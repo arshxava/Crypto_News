@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, Calendar } from 'lucide-react';
 import { SummarizeDialog } from './summarize-dialog';
+import { format } from 'date-fns';
 
 interface ArticleCardProps {
   article: Article;
@@ -29,6 +30,12 @@ export function ArticleCard({ article }: ArticleCardProps) {
         <CardTitle className="text-lg font-bold leading-tight">
           {article.title}
         </CardTitle>
+        {article.publishedAt && (
+            <div className="flex items-center pt-2 text-xs text-muted-foreground">
+                <Calendar className="mr-1 h-4 w-4" />
+                {format(new Date(article.publishedAt), 'PPP')}
+            </div>
+        )}
       </CardHeader>
       <CardContent className="flex-grow">
         <div className="aspect-video overflow-hidden rounded-md">

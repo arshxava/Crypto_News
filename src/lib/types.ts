@@ -6,4 +6,5 @@ export type Article = {
   url: string;
   content: string;
   keywords: string[];
+  publishedAt: string;
 };

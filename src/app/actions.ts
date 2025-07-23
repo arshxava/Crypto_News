@@ -46,6 +46,7 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
                 url: article.url,
                 content: article.content,
                 keywords: query === 'cryptocurrency' ? [] : [query.toLowerCase()],
+                publishedAt: article.publishedAt,
             }))
         };
     } catch (e: any) {
