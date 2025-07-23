@@ -64,7 +64,7 @@ export default function Home() {
         <div className="container max-w-screen-2xl py-8">
           <div className="mb-8 space-y-4">
             <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-              Latest Crypto News & Insights
+              Latest Crypto News & Blogs
             </h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
