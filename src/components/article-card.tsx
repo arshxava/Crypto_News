@@ -51,9 +51,10 @@ export function ArticleCard({ article }: ArticleCardProps) {
       </CardHeader>
       <CardContent className="flex-grow">
         {isPlaceholder ? (
-          <div className="aspect-video overflow-hidden rounded-md bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 flex items-center justify-center">
-             <span className="text-xs font-medium text-muted-foreground">No Image</span>
-          </div>
+            <div className="relative h-full max-h-[160px] overflow-hidden">
+                <p className="text-sm text-muted-foreground">{article.content}</p>
+                <div className="absolute bottom-0 left-0 h-full w-full bg-gradient-to-t from-card to-transparent" />
+            </div>
         ) : (
           <div className="aspect-video overflow-hidden rounded-md">
             <Image
@@ -75,15 +76,15 @@ export function ArticleCard({ article }: ArticleCardProps) {
         .no-image .aspect-video {
             display: none;
         }
-        .no-image::before {
+         .no-image::before {
             content: '';
             display: block;
-            padding-top: 56.25%;
+            padding-top: 56.25%; /* 16:9 aspect ratio */
             background: linear-gradient(to bottom right, hsl(var(--primary-foreground)), hsl(var(--secondary)));
             border-radius: var(--radius);
         }
       `}</style>
-      <CardFooter className="flex justify-between gap-2">
+      <CardFooter className="mt-auto flex justify-between gap-2 pt-4">
         <SummarizeDialog content={article.content} title={article.title} />
         <Button asChild variant="ghost" size="sm">
           <Link href={article.url} target="_blank" rel="noopener noreferrer">
