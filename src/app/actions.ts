@@ -78,7 +78,7 @@ async function getCryptoCompareArticles(query: string, apiKey: string): Promise<
         id: article.url,
         title: article.title,
         source: article.source,
-        imageUrl: article.imageurl,
+        imageUrl: article.imageurl || `https://placehold.co/600x400.png`,
         url: article.url,
         content: article.body,
         keywords: (article.categories || '').split(',').map((c:string) => c.trim().toLowerCase()),
