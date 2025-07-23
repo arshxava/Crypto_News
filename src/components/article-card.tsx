@@ -23,6 +23,8 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article }: ArticleCardProps) {
+  const isPlaceholder = article.imageUrl.includes('placehold.co');
+
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
       <CardHeader>
@@ -48,17 +50,39 @@ export function ArticleCard({ article }: ArticleCardProps) {
         )}
       </CardHeader>
       <CardContent className="flex-grow">
-        <div className="aspect-video overflow-hidden rounded-md">
-           <Image
-             src={article.imageUrl}
-             alt={article.title}
-             width={600}
-             height={400}
-             className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-             data-ai-hint="crypto technology"
-           />
-        </div>
+        {isPlaceholder ? (
+          <div className="aspect-video overflow-hidden rounded-md bg-gradient-to-br from-primary/10 via-accent/10 to-secondary/10 flex items-center justify-center">
+             <span className="text-xs font-medium text-muted-foreground">No Image</span>
+          </div>
+        ) : (
+          <div className="aspect-video overflow-hidden rounded-md">
+            <Image
+              src={article.imageUrl}
+              alt={article.title}
+              width={600}
+              height={400}
+              className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+              data-ai-hint="crypto technology"
+              onError={(e) => {
+                  // In case of image loading error, fallback to placeholder logic
+                  e.currentTarget.parentElement?.parentElement?.classList.add('no-image');
+              }}
+            />
+          </div>
+        )}
       </CardContent>
+      <style jsx>{`
+        .no-image .aspect-video {
+            display: none;
+        }
+        .no-image::before {
+            content: '';
+            display: block;
+            padding-top: 56.25%;
+            background: linear-gradient(to bottom right, hsl(var(--primary-foreground)), hsl(var(--secondary)));
+            border-radius: var(--radius);
+        }
+      `}</style>
       <CardFooter className="flex justify-between gap-2">
         <SummarizeDialog content={article.content} title={article.title} />
         <Button asChild variant="ghost" size="sm">
