@@ -11,8 +11,10 @@ import { Search, Rss } from 'lucide-react';
 import type { Article } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getArticles } from './actions';
+import { Separator } from '@/components/ui/separator';
 
 const FILTERS = ['All', 'Bitcoin', 'Ethereum', 'NFTs', 'DeFi', 'Regulation'];
+const CONTENT_TYPE_FILTERS = ['All', 'News', 'Blogs'];
 
 
 export default function Home() {
@@ -21,6 +23,7 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
+    const [contentTypeFilter, setContentTypeFilter] = useState('All');
 
     useEffect(() => {
         const fetchArticles = async () => {
@@ -38,13 +41,24 @@ export default function Home() {
     }, [activeFilter]);
 
     const filteredArticles = useMemo(() => {
-        if (!searchTerm) {
-            return articles;
+        let results = articles;
+
+        // Filter by content type (News/Blogs)
+        if (contentTypeFilter !== 'All') {
+            results = results.filter(
+                (article) => article.type.toLowerCase() === contentTypeFilter.slice(0, -1).toLowerCase() // 'Blogs' -> 'blog'
+            );
         }
-        return articles.filter((article) =>
-            article.title.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [searchTerm, articles]);
+
+        // Filter by search term
+        if (searchTerm) {
+            results = results.filter((article) =>
+                article.title.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+        
+        return results;
+    }, [searchTerm, articles, contentTypeFilter]);
 
 
   return (
@@ -76,17 +90,32 @@ export default function Home() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {FILTERS.map((filter) => (
-                <Button
-                  key={filter}
-                  variant={activeFilter === filter ? 'default' : 'outline'}
-                  onClick={() => setActiveFilter(filter)}
-                  className="rounded-full"
-                >
-                  {filter}
-                </Button>
-              ))}
+            <div className="flex flex-col gap-2">
+                 <div className="flex flex-wrap gap-2">
+                    {CONTENT_TYPE_FILTERS.map((filter) => (
+                        <Button
+                        key={filter}
+                        variant={contentTypeFilter === filter ? 'default' : 'outline'}
+                        onClick={() => setContentTypeFilter(filter)}
+                        className="rounded-full"
+                        >
+                        {filter}
+                        </Button>
+                    ))}
+                </div>
+                <Separator />
+                <div className="flex flex-wrap gap-2">
+                    {FILTERS.map((filter) => (
+                        <Button
+                        key={filter}
+                        variant={activeFilter === filter ? 'default' : 'outline'}
+                        onClick={() => setActiveFilter(filter)}
+                        className="rounded-full"
+                        >
+                        {filter}
+                        </Button>
+                    ))}
+                </div>
             </div>
           </div>
           
