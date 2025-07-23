@@ -2,6 +2,7 @@
 'use server'
 
 import type { Article } from '@/lib/types';
+import Parser from 'rss-parser';
 
 // Helper function for NewsAPI
 async function getNewsApiArticles(query: string, apiKey: string): Promise<Article[]> {
@@ -83,6 +84,48 @@ async function getCryptoCompareArticles(query: string, apiKey: string): Promise<
     }));
 }
 
+// Helper function for RSS Feeds
+async function getRssArticles(query: string): Promise<Article[]> {
+    const parser = new Parser();
+    const rssFeeds = [
+        'https://cointelegraph.com/rss',
+        'https://cryptoslate.com/feed/',
+        'https://www.binance.com/en/blog/feed',
+        'https://bitcoinmagazine.com/feed'
+    ];
+    let allRssArticles: Article[] = [];
+
+    for (const feedUrl of rssFeeds) {
+        try {
+            const feed = await parser.parseURL(feedUrl);
+            const articles = feed.items.map(item => ({
+                id: item.link || item.guid || item.id,
+                title: item.title || '',
+                source: new URL(feed.link || feedUrl).hostname,
+                imageUrl: item.enclosure?.url || `https://placehold.co/600x400.png`,
+                url: item.link || '',
+                content: item.contentSnippet || item.content || item.summary || '',
+                keywords: (item.categories || []).map(c => c.toLowerCase()),
+                publishedAt: item.isoDate || new Date().toISOString(),
+            }));
+            allRssArticles.push(...articles);
+        } catch (error) {
+            console.error(`Failed to fetch or parse RSS feed: ${feedUrl}`, error);
+        }
+    }
+
+    if (query !== 'cryptocurrency') {
+        const lowerCaseQuery = query.toLowerCase();
+        return allRssArticles.filter(article => 
+            article.title.toLowerCase().includes(lowerCaseQuery) ||
+            article.content.toLowerCase().includes(lowerCaseQuery) ||
+            article.keywords.includes(lowerCaseQuery)
+        );
+    }
+    
+    return allRssArticles;
+}
+
 
 export async function getArticles(query: string): Promise<{ articles?: Article[], error?: string }> {
     try {
@@ -109,9 +152,12 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
         } else {
             console.warn("CryptoCompare key is missing.");
         }
+        
+        // Always fetch RSS articles
+        allPromises.push(getRssArticles(query));
 
-        if (allPromises.length === 0) {
-            return { error: "No API keys are configured. Please add at least one to your .env file." };
+        if (allPromises.length === 1) { // Only RSS fetch is pushed
+            return { error: "No API keys are configured. Please add at least one to your .env file to get news from APIs." };
         }
 
         const results = await Promise.all(allPromises);
