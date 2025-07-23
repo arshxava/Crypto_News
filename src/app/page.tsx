@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from 'react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -14,7 +14,7 @@ const FILTERS = ['All', 'Bitcoin', 'Ethereum', 'NFTs', 'DeFi', 'Regulation'];
 
 async function getArticles(query: string) {
   try {
-    const res = await fetch(`https://newsapi.org/v2/everything?q=${query}&sortBy=publishedAt&language=en&apiKey=${process.env.NEWS_API_KEY}`);
+    const res = await fetch(`https://newsapi.org/v2/everything?q=${query}&sortBy=publishedAt&language=en&apiKey=${process.env.NEXT_PUBLIC_NEWS_API_KEY}`);
 
     if (!res.ok) {
       if (res.status === 401) {
@@ -55,106 +55,34 @@ async function getArticles(query: string) {
   }
 }
 
-// This is a temporary solution to fetch data on the client until we can refactor this properly.
-// In a real-world scenario, we'd want to fetch data in a server component.
-function HomePageWrapper() {
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [error, setError] = useState<string | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
-
-  React.useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      const result = await getArticles('cryptocurrency');
-      setArticles(result.articles || []);
-      setError(result.error);
-      setLoading(false);
-    }
-    loadData();
-  }, []);
-
-  if (loading) {
-    return (
-        <div className="flex min-h-screen w-full flex-col">
-            <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="container flex h-16 max-w-screen-2xl items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Rss className="h-6 w-6 text-primary" />
-                        <h1 className="text-2xl font-bold text-primary">CryptoFlash</h1>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <ThemeToggle />
-                    </div>
-                </div>
-            </header>
-            <main className="flex-1">
-                <div className="container max-w-screen-2xl py-8">
-                    <div className="mb-8 space-y-4">
-                        <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-                        Latest Crypto News & Insights
-                        </h2>
-                        <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input
-                            type="search"
-                            placeholder="Search articles..."
-                            className="w-full rounded-full pl-10 md:w-1/3"
-                            disabled
-                        />
-                        </div>
-                         <div className="flex flex-wrap gap-2">
-                            {FILTERS.map((filter) => (
-                                <Button
-                                key={filter}
-                                variant={'outline'}
-                                className="rounded-full"
-                                disabled
-                                >
-                                {filter}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {Array.from({ length: 8 }).map((_, i) => (
-                            <Skeleton key={i} className="h-96 w-full" />
-                        ))}
-                    </div>
-                </div>
-            </main>
-        </div>
-    )
-  }
-
-  return <HomePageClient allArticles={articles} fetchError={error} />;
-}
-
-
 export default function Home() {
-    return <HomePageWrapper />;
-}
+    const [articles, setArticles] = useState<Article[]>([]);
+    const [fetchError, setFetchError] = useState<string | undefined>(undefined);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeFilter, setActiveFilter] = useState('All');
 
-function HomePageClient({ allArticles, fetchError }: { allArticles: Article[], fetchError?: string }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState('All');
+    useEffect(() => {
+        const fetchArticles = async () => {
+            setLoading(true);
+            const query = activeFilter === 'All' ? 'cryptocurrency' : activeFilter;
+            const result = await getArticles(query);
+            setArticles(result.articles || []);
+            setFetchError(result.error);
+            setLoading(false);
+        };
+        fetchArticles();
+    }, [activeFilter]);
+    
+    const filteredArticles = useMemo(() => {
+        if (!searchTerm) {
+            return articles;
+        }
+        return articles.filter((article) =>
+            article.title.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [searchTerm, articles]);
 
-  const filteredArticles = useMemo(() => {
-    let articles = allArticles;
-
-    if (activeFilter !== 'All') {
-      articles = articles.filter((article) =>
-        article.title.toLowerCase().includes(activeFilter.toLowerCase())
-      );
-    }
-
-    if (searchTerm) {
-      articles = articles.filter((article) =>
-        article.title.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    return articles;
-  }, [searchTerm, activeFilter, allArticles]);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -199,7 +127,13 @@ function HomePageClient({ allArticles, fetchError }: { allArticles: Article[], f
             </div>
           </div>
           
-          {fetchError ? (
+          {loading ? (
+             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <Skeleton key={i} className="h-96 w-full" />
+                ))}
+            </div>
+          ) : fetchError ? (
              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-destructive p-12 text-center">
                 <h3 className="text-xl font-medium tracking-tight text-destructive">Error Fetching News</h3>
                 <p className="text-muted-foreground">{fetchError}</p>
