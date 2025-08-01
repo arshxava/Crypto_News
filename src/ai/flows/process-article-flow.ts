@@ -12,7 +12,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import sharp from 'sharp';
 
 const ProcessArticleInputSchema = z.object({
   title: z.string().describe('The title of the article.'),
@@ -62,18 +61,8 @@ const generateImageFlow = ai.defineFlow(
                 responseModalities: ['TEXT', 'IMAGE'],
             },
         });
-        const imageUri = media.url;
         
-        // Resize and compress the image
-        const base64Data = imageUri.split(',')[1];
-        const imageBuffer = Buffer.from(base64Data, 'base64');
-        
-        const compressedImageBuffer = await sharp(imageBuffer)
-            .resize(600, 400, { fit: 'cover' })
-            .jpeg({ quality: 80 })
-            .toBuffer();
-
-        return `data:image/jpeg;base64,${compressedImageBuffer.toString('base64')}`;
+        return media.url;
     }
 );
 
