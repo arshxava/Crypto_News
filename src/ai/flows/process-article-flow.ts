@@ -12,14 +12,18 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import OpenAI from 'openai';
-
 
 const ProcessArticleInputSchema = z.object({
   title: z.string().describe('The original title of the article.'),
   content: z.string().describe('The original content of the article.'),
 });
 export type ProcessArticleInput = z.infer<typeof ProcessArticleInputSchema>;
+
+
+const ArticleRewriteSchema = z.object({
+    rewrittenTitle: z.string().describe("The rewritten, original, and SEO-friendly title for the article. It should capture the essence of the article but be entirely new words."),
+    rewrittenContent: z.string().describe("The rewritten, comprehensive, well-structured, and original article content. It should be at least 4 paragraphs long and pass plagiarism checks."),
+});
 
 const ProcessArticleOutputSchema = z.object({
   rewrittenTitle: z.string().describe('The rewritten, original title for the article.'),
@@ -30,65 +34,58 @@ export type ProcessArticleOutput = z.infer<typeof ProcessArticleOutputSchema>;
 
 
 export async function processArticle(input: ProcessArticleInput): Promise<ProcessArticleOutput> {
+    return processArticleFlow(input);
+}
+
+
+const rewritePrompt = ai.definePrompt({
+    name: 'rewriteArticlePrompt',
+    input: { schema: ProcessArticleInputSchema },
+    output: { schema: ArticleRewriteSchema },
+    prompt: `You are an expert news editor and journalist for a high-traffic online publication focused on cryptocurrency. 
+Your task is to take an existing article and completely rewrite it to be original, insightful, and engaging for a savvy audience.
+Do not just summarize. The goal is to produce a unique piece of journalism.
+
+Original Title: {{{title}}}
+Original Content: {{{content}}}
+`,
+});
+
+
+const processArticleFlow = ai.defineFlow(
+  {
+    name: 'processArticleFlow',
+    inputSchema: ProcessArticleInputSchema,
+    outputSchema: ProcessArticleOutputSchema,
+  },
+  async (input) => {
     
     console.log(`[AI] Starting to process article: "${input.title}"`);
 
-    const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-    });
-
-    let rewrittenTitle = '';
-    let rewrittenContent = '';
-
-    try {
-        console.log('[AI] Calling OpenAI to rewrite content...');
-        const chatCompletion = await openai.chat.completions.create({
-            messages: [
-                { role: 'system', content: `You are an expert news editor and journalist for a high-traffic online publication focused on cryptocurrency. 
-Your task is to take an existing article and completely rewrite it to be original, insightful, and engaging for a savvy audience.
-Respond with a JSON object with two keys: "rewrittenTitle" and "rewrittenContent".
-
-1.  **Rewrite the Title**: Create a new, compelling, and SEO-friendly title. It should capture the essence of the article but be entirely your own words.
-2.  **Rewrite the Content**: Rephrase, restructure, and add your own insights to the article content. Do not just summarize. The goal is to produce a unique piece of journalism that passes plagiarism checks. The rewritten content should be comprehensive, well-structured, and at least 4 paragraphs long.`},
-                { role: 'user', content: `Original Title: ${input.title}\n\nOriginal Content:\n${input.content}` }
-            ],
-            model: 'gpt-4o',
-            response_format: { type: "json_object" },
-        });
-        
-        const responseContent = chatCompletion.choices[0].message.content;
-        console.log('[AI] Received response from OpenAI.');
-
-
-        if (responseContent) {
-            const responseJson = JSON.parse(responseContent);
-            rewrittenTitle = responseJson.rewrittenTitle;
-            rewrittenContent = responseJson.rewrittenContent;
-            console.log(`[AI] Successfully parsed response and extracted rewritten title: "${rewrittenTitle}"`);
-        } else {
-            throw new Error("OpenAI returned an empty response.");
-        }
-
-    } catch (e: any) {
-        console.error("Error processing article with OpenAI:", e.message);
-        // Re-throw the error to be caught by Promise.allSettled in actions.ts
-        throw new Error(`Failed to process article content with OpenAI: ${e.message}`);
+    const { output: rewriteOutput } = await rewritePrompt(input);
+    
+    if (!rewriteOutput) {
+        console.error("Failed to rewrite article, AI returned empty output.");
+        throw new Error("Failed to rewrite article content.");
     }
-
-
+    
+    console.log(`[AI] Successfully rewritten title: "${rewriteOutput.rewrittenTitle}"`);
     console.log('[AI] Calling Google AI to generate image...');
+    
     const { media } = await ai.generate({
         model: 'googleai/gemini-2.0-flash-preview-image-generation',
-        prompt: `Generate a visually striking, abstract, and modern image that represents the following theme from a news article: "${rewrittenTitle}". The image should be suitable for a technology or finance blog. Do not include any text in the image.`,
+        prompt: `Generate a visually striking, abstract, and modern image that represents the following theme from a news article: "${rewriteOutput.rewrittenTitle}". The image should be suitable for a technology or finance blog. Do not include any text in the image.`,
         config: {
             responseModalities: ['TEXT', 'IMAGE'],
         },
     });
+    
     console.log('[AI] Successfully generated image.');
 
     return {
-      rewrittenTitle,
-      rewrittenContent,
+      rewrittenTitle: rewriteOutput.rewrittenTitle,
+      rewrittenContent: rewriteOutput.rewrittenContent,
       generatedImageUrl: media.url,
     };
-}
+  }
+);
