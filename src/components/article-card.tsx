@@ -60,7 +60,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
               width={600}
               height={400}
               className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-              unoptimized // Since we are using data URIs from AI
+              unoptimized
             />
           </div>
       </CardContent>

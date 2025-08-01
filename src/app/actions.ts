@@ -82,7 +82,7 @@ async function getCryptoCompareArticles(query: string, apiKey: string): Promise<
         title: article.title,
         rewrittenTitle: '', // Will be populated by AI
         source: article.source,
-        imageUrl: article.imageurl || `https://placehold.co/600x400.png`,
+        imageUrl: article.imageurl,
         url: article.url,
         content: article.body,
         keywords: (article.categories || '').split(',').map((c:string) => c.trim().toLowerCase()),
@@ -110,7 +110,7 @@ async function getRssArticles(query: string): Promise<Article[]> {
                 title: item.title || '',
                 rewrittenTitle: '', // Will be populated by AI
                 source: new URL(parsedFeed.link || feed.url).hostname,
-                imageUrl: item.enclosure?.url || `https://placehold.co/600x400.png`,
+                imageUrl: item.enclosure?.url,
                 url: item.link || '',
                 content: item.contentSnippet || item.content || item.summary || '',
                 keywords: (item.categories || []).map(c => c.toLowerCase()),
@@ -193,6 +193,10 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
         const processedArticlePromises = articlesToProcess.map(async (article) => {
             // If there's no Gemini key, just return the original article to avoid errors.
             if (!geminiApiKey) {
+                // If the original article is missing an image, use a placeholder.
+                if (!article.imageUrl) {
+                    article.imageUrl = `https://placehold.co/600x400.png`;
+                }
                 return article;
             }
             try {
@@ -212,7 +216,8 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
                 // This ensures the article is still displayed.
                 return {
                     ...article,
-                    imageUrl: `https://placehold.co/600x400.png` // Use placeholder for consistency
+                    // If the original article is missing an image, use a placeholder.
+                    imageUrl: article.imageUrl || `https://placehold.co/600x400.png`
                 };
             }
         });
