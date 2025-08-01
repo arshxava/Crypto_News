@@ -11,7 +11,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import OpenAI from 'openai';
 
 
@@ -30,16 +30,6 @@ export type ProcessArticleOutput = z.infer<typeof ProcessArticleOutputSchema>;
 
 
 export async function processArticle(input: ProcessArticleInput): Promise<ProcessArticleOutput> {
-  return processArticleFlow(input);
-}
-
-const processArticleFlow = ai.defineFlow(
-  {
-    name: 'processArticleFlow',
-    inputSchema: ProcessArticleInputSchema,
-    outputSchema: ProcessArticleOutputSchema,
-  },
-  async (input) => {
     
     // Step 1: Rewrite the article title and content using OpenAI
     const openai = new OpenAI({
@@ -96,5 +86,4 @@ Respond with a JSON object with two keys: "rewrittenTitle" and "rewrittenContent
       rewrittenContent,
       generatedImageUrl: media.url,
     };
-  }
-);
+}
