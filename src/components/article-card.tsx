@@ -17,13 +17,16 @@ import { ArrowUpRight, Calendar } from 'lucide-react';
 import { SummarizeDialog } from './summarize-dialog';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
 
 interface ArticleCardProps {
   article: Article;
 }
 
 export function ArticleCard({ article }: ArticleCardProps) {
-  const isPlaceholder = article.imageUrl.includes('placehold.co');
+
+  const displayTitle = useMemo(() => article.rewrittenTitle || article.title, [article]);
+  const articleId = useMemo(() => encodeURIComponent(article.id), [article.id]);
 
   return (
     <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
@@ -40,7 +43,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
             </Badge>
         </div>
         <CardTitle className="text-lg font-bold leading-tight">
-          {article.title}
+          {displayTitle}
         </CardTitle>
         {article.publishedAt && (
             <div className="flex items-center pt-2 text-xs text-muted-foreground">
@@ -53,18 +56,18 @@ export function ArticleCard({ article }: ArticleCardProps) {
         <div className="aspect-video overflow-hidden rounded-md">
             <Image
               src={article.imageUrl}
-              alt={article.title}
+              alt={displayTitle}
               width={600}
               height={400}
               className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-              data-ai-hint="crypto technology"
+              unoptimized // Since we are using data URIs from AI
             />
           </div>
       </CardContent>
       <CardFooter className="mt-auto flex justify-between gap-2 pt-4">
-        <SummarizeDialog content={article.content} title={article.title} />
+        <SummarizeDialog content={article.content} title={displayTitle} />
         <Button asChild variant="ghost" size="sm">
-          <Link href={article.url} target="_blank" rel="noopener noreferrer">
+          <Link href={`/article/${articleId}`}>
             Read More
             <ArrowUpRight className="ml-1 h-4 w-4" />
           </Link>

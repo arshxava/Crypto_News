@@ -28,6 +28,7 @@ async function getNewsApiArticles(query: string, apiKey: string): Promise<Articl
         .map((article: any) => ({
             id: article.url,
             title: article.title,
+            rewrittenTitle: '', // Will be populated by AI
             source: article.source.name,
             imageUrl: article.urlToImage,
             url: article.url,
@@ -50,6 +51,7 @@ async function getCryptoPanicArticles(query: string, apiKey: string): Promise<Ar
     return (data.results || []).map((article: any) => ({
         id: article.url,
         title: article.title,
+        rewrittenTitle: '', // Will be populated by AI
         source: article.source.domain,
         imageUrl: `https://placehold.co/600x400.png`,
         url: article.url,
@@ -78,6 +80,7 @@ async function getCryptoCompareArticles(query: string, apiKey: string): Promise<
     return (data.Data || []).map((article: any) => ({
         id: article.url,
         title: article.title,
+        rewrittenTitle: '', // Will be populated by AI
         source: article.source,
         imageUrl: article.imageurl || `https://placehold.co/600x400.png`,
         url: article.url,
@@ -105,6 +108,7 @@ async function getRssArticles(query: string): Promise<Article[]> {
             const articles = parsedFeed.items.map(item => ({
                 id: item.link || item.guid || item.id,
                 title: item.title || '',
+                rewrittenTitle: '', // Will be populated by AI
                 source: new URL(parsedFeed.link || feed.url).hostname,
                 imageUrl: item.enclosure?.url || `https://placehold.co/600x400.png`,
                 url: item.link || '',
@@ -164,29 +168,40 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
         // Always fetch RSS articles
         allPromises.push(getRssArticles(query));
 
-        if (allPromises.length === 1) { // Only RSS fetch is pushed
-            return { error: "No API keys are configured. Please add at least one to your .env file to get news from APIs." };
+        if (allPromises.length === 1 && !process.env.OPENAI_API_KEY) { // Only RSS fetch is pushed and no OpenAI key
+             return { error: "No API keys are configured for news sources. Please add at least one to your .env file." };
         }
+        
+        if (!process.env.OPENAI_API_KEY) {
+            return { error: "OpenAI API key is missing. Please add it to your .env file to enable AI content generation." };
+        }
+
 
         const initialResults = await Promise.allSettled(allPromises);
         let allArticles = initialResults
             .filter(result => result.status === 'fulfilled')
             .flatMap(result => (result as PromiseFulfilledResult<Article[]>).value);
         
+        // Remove duplicates based on title
+        const uniqueArticles = allArticles.filter((article, index, self) =>
+            index === self.findIndex((a) => a.title === article.title)
+        );
+        
         // Sort all articles by date, descending
-        allArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+        uniqueArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
         // Take the top 12 articles to avoid excessive AI processing
-        allArticles = allArticles.slice(0, 12);
+        const articlesToProcess = uniqueArticles.slice(0, 12);
         
         // Process articles with AI
-        const processedArticlePromises = allArticles.map(article => 
+        const processedArticlePromises = articlesToProcess.map(article => 
             processArticle({
                 title: article.title,
                 content: article.content,
             }).then(processed => ({
                 ...article, // Keep original data like id, url, etc.
-                content: processed.rewrittenContent,
+                rewrittenTitle: processed.rewrittenTitle,
+                content: processed.rewrittenContent, // This is now the rewritten content
                 imageUrl: processed.generatedImageUrl,
             }))
         );

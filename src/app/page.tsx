@@ -11,6 +11,7 @@ import { Search, Rss } from 'lucide-react';
 import type { Article } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getArticles } from './actions';
+import { useArticleStore } from '@/lib/store';
 import {
   Select,
   SelectContent,
@@ -24,7 +25,7 @@ const CONTENT_TYPE_FILTERS = ['All', 'News', 'Blogs'];
 
 
 export default function Home() {
-    const [articles, setArticles] = useState<Article[]>([]);
+    const { articles, setArticles, clearArticles } = useArticleStore();
     const [fetchError, setFetchError] = useState<string | undefined>(undefined);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -34,6 +35,7 @@ export default function Home() {
     useEffect(() => {
         const fetchArticles = async () => {
             setLoading(true);
+            clearArticles(); // Clear previous articles before fetching new ones
             const query = activeFilter === 'All' ? 'cryptocurrency' : activeFilter;
             const result = await getArticles(query);
             
@@ -44,7 +46,7 @@ export default function Home() {
             });
         };
         fetchArticles();
-    }, [activeFilter]);
+    }, [activeFilter, setArticles, clearArticles]);
 
     const filteredArticles = useMemo(() => {
         let results = articles;
@@ -59,7 +61,7 @@ export default function Home() {
         // Filter by search term
         if (searchTerm) {
             results = results.filter((article) =>
-                article.title.toLowerCase().includes(searchTerm.toLowerCase())
+                (article.rewrittenTitle || article.title).toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
         
@@ -84,7 +86,7 @@ export default function Home() {
         <div className="container max-w-screen-2xl py-8">
           <div className="mb-8 space-y-4">
             <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
-              Latest Crypto News & Blogs
+              Your AI-Powered Crypto Briefing
             </h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -134,6 +136,7 @@ export default function Home() {
              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-destructive p-12 text-center">
                 <h3 className="text-xl font-medium tracking-tight text-destructive">Error Fetching News</h3>
                 <p className="text-muted-foreground">{fetchError}</p>
+                <p className="text-sm mt-2 text-muted-foreground">Please ensure your API keys are correctly configured in the .env file.</p>
             </div>
           ) : filteredArticles.length > 0 ? (
              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -144,7 +147,7 @@ export default function Home() {
            ) : (
             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
                 <h3 className="text-xl font-medium tracking-tight">No articles found</h3>
-                <p className="text-muted-foreground">Try adjusting your search or filters.</p>
+                <p className="text-muted-foreground">Try adjusting your search or filters, or wait for the AI to process new content.</p>
             </div>
            )}
         </div>
