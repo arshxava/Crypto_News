@@ -12,7 +12,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { gpt4o } from 'genkit/x/openai';
 
 
 const ProcessArticleInputSchema = z.object({
@@ -48,7 +47,6 @@ const rewritePrompt = ai.definePrompt({
     Original Content:
     {{{content}}}
     `,
-    model: gpt4o,
 });
 
 

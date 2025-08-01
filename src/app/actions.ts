@@ -168,14 +168,9 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
         // Always fetch RSS articles
         allPromises.push(getRssArticles(query));
 
-        if (allPromises.length === 1 && !process.env.OPENAI_API_KEY) { // Only RSS fetch is pushed and no OpenAI key
+        if (allPromises.length === 1) { 
              return { error: "No API keys are configured for news sources. Please add at least one to your .env file." };
         }
-        
-        if (!process.env.OPENAI_API_KEY) {
-            return { error: "OpenAI API key is missing. Please add it to your .env file to enable AI content generation." };
-        }
-
 
         const initialResults = await Promise.allSettled(allPromises);
         let allArticles = initialResults
