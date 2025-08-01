@@ -168,8 +168,8 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
             return { error: "No API keys are configured. Please add at least one to your .env file to get news from APIs." };
         }
 
-        const results = await Promise.allSettled(allPromises);
-        let allArticles = results
+        const initialResults = await Promise.allSettled(allPromises);
+        let allArticles = initialResults
             .filter(result => result.status === 'fulfilled')
             .flatMap(result => (result as PromiseFulfilledResult<Article[]>).value);
         
@@ -178,30 +178,33 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
 
         // Take the top 12 articles to avoid excessive AI processing
         allArticles = allArticles.slice(0, 12);
-
+        
         // Process articles with AI
-        const processedArticles = await Promise.all(
-            allArticles.map(async (article) => {
-                try {
-                    const processed = await processArticle({
-                        title: article.title,
-                        content: article.content,
-                    });
-                    return {
-                        ...article,
-                        content: processed.rewrittenContent,
-                        imageUrl: processed.generatedImageUrl,
-                    };
-                } catch (e) {
-                    console.error(`Failed to process article with AI: ${article.title}`, e);
-                    // Return the original article if AI processing fails
-                    return article;
-                }
-            })
+        const processedArticlePromises = allArticles.map(article => 
+            processArticle({
+                title: article.title,
+                content: article.content,
+            }).then(processed => ({
+                ...article, // Keep original data like id, url, etc.
+                content: processed.rewrittenContent,
+                imageUrl: processed.generatedImageUrl,
+            }))
         );
 
+        const processedResults = await Promise.allSettled(processedArticlePromises);
 
-        return { articles: processedArticles };
+        const successfullyProcessedArticles = processedResults
+            .filter(result => {
+                if (result.status === 'rejected') {
+                    console.error("Failed to process article with AI:", result.reason);
+                    return false;
+                }
+                return true;
+            })
+            .map(result => (result as PromiseFulfilledResult<Article>).value);
+
+
+        return { articles: successfullyProcessedArticles };
 
     } catch (e: any) {
         console.error("Error fetching articles:", e.message);

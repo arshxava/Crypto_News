@@ -31,42 +31,6 @@ export async function processArticle(input: ProcessArticleInput): Promise<Proces
 }
 
 
-const rewritePrompt = ai.definePrompt({
-    name: 'rewriteArticlePrompt',
-    input: { schema: z.object({ title: z.string(), content: z.string() }) },
-    output: { schema: z.object({ rewrittenContent: z.string() }) },
-    prompt: `You are a professional news editor. Rewrite the following article to be unique, engaging, and suitable for a modern audience interested in cryptocurrency. 
-    Do not just summarize, but instead rephrase and restructure the content to make it original.
-    
-    Title: {{{title}}}
-    
-    Original Content:
-    {{{content}}}
-    
-    Your rewritten content should be at least 3 paragraphs long.
-    `,
-});
-
-const generateImageFlow = ai.defineFlow(
-    {
-      name: 'generateArticleImageFlow',
-      inputSchema: z.object({ title: z.string() }),
-      outputSchema: z.string(),
-    },
-    async ({ title }) => {
-        const { media } = await ai.generate({
-            model: 'googleai/gemini-2.0-flash-preview-image-generation',
-            prompt: `Generate a visually striking, abstract, and modern image that represents the following theme from a news article: "${title}". The image should be suitable for a technology or finance blog. Do not include any text in the image.`,
-            config: {
-                responseModalities: ['TEXT', 'IMAGE'],
-            },
-        });
-        
-        return media.url;
-    }
-);
-
-
 const processArticleFlow = ai.defineFlow(
   {
     name: 'processArticleFlow',
@@ -75,15 +39,38 @@ const processArticleFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // Run content rewriting and image generation in parallel
-    const [rewriteResult, imageResult] = await Promise.all([
-        rewritePrompt(input),
-        generateImageFlow({ title: input.title }),
-    ]);
+    // Step 1: Rewrite the article content
+    const rewritePrompt = ai.definePrompt({
+        name: 'rewriteArticlePrompt',
+        input: { schema: z.object({ title: z.string(), content: z.string() }) },
+        output: { schema: z.object({ rewrittenContent: z.string() }) },
+        prompt: `You are a professional news editor. Rewrite the following article to be unique, engaging, and suitable for a modern audience interested in cryptocurrency. 
+        Do not just summarize, but instead rephrase and restructure the content to make it original.
+        
+        Title: {{{title}}}
+        
+        Original Content:
+        {{{content}}}
+        
+        Your rewritten content should be at least 3 paragraphs long.
+        `,
+    });
+
+    const rewriteResult = await rewritePrompt(input);
+    const rewrittenContent = rewriteResult.output!.rewrittenContent;
+
+    // Step 2: Generate a new image based on the title
+    const { media } = await ai.generate({
+        model: 'googleai/gemini-2.0-flash-preview-image-generation',
+        prompt: `Generate a visually striking, abstract, and modern image that represents the following theme from a news article: "${input.title}". The image should be suitable for a technology or finance blog. Do not include any text in the image.`,
+        config: {
+            responseModalities: ['TEXT', 'IMAGE'],
+        },
+    });
     
     return {
-      rewrittenContent: rewriteResult.output!.rewrittenContent,
-      generatedImageUrl: imageResult,
+      rewrittenContent: rewrittenContent,
+      generatedImageUrl: media.url,
     };
   }
 );
