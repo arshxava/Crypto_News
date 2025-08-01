@@ -31,7 +31,8 @@ export type ProcessArticleOutput = z.infer<typeof ProcessArticleOutputSchema>;
 
 export async function processArticle(input: ProcessArticleInput): Promise<ProcessArticleOutput> {
     
-    // Step 1: Rewrite the article title and content using OpenAI
+    console.log(`[AI] Starting to process article: "${input.title}"`);
+
     const openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,
     });
@@ -40,6 +41,7 @@ export async function processArticle(input: ProcessArticleInput): Promise<Proces
     let rewrittenContent = '';
 
     try {
+        console.log('[AI] Calling OpenAI to rewrite content...');
         const chatCompletion = await openai.chat.completions.create({
             messages: [
                 { role: 'system', content: `You are an expert news editor and journalist for a high-traffic online publication focused on cryptocurrency. 
@@ -55,24 +57,26 @@ Respond with a JSON object with two keys: "rewrittenTitle" and "rewrittenContent
         });
         
         const responseContent = chatCompletion.choices[0].message.content;
+        console.log('[AI] Received response from OpenAI.');
+
 
         if (responseContent) {
             const responseJson = JSON.parse(responseContent);
             rewrittenTitle = responseJson.rewrittenTitle;
             rewrittenContent = responseJson.rewrittenContent;
+            console.log(`[AI] Successfully parsed response and extracted rewritten title: "${rewrittenTitle}"`);
         } else {
             throw new Error("OpenAI returned an empty response.");
         }
 
     } catch (e: any) {
         console.error("Error processing article with OpenAI:", e.message);
-        console.error("Raw OpenAI response that caused error:", e.response?.data);
-        // Re-throw the error to be caught by the caller in actions.ts
+        // Re-throw the error to be caught by Promise.allSettled in actions.ts
         throw new Error(`Failed to process article content with OpenAI: ${e.message}`);
     }
 
 
-    // Step 2: Generate a new image based on the new title
+    console.log('[AI] Calling Google AI to generate image...');
     const { media } = await ai.generate({
         model: 'googleai/gemini-2.0-flash-preview-image-generation',
         prompt: `Generate a visually striking, abstract, and modern image that represents the following theme from a news article: "${rewrittenTitle}". The image should be suitable for a technology or finance blog. Do not include any text in the image.`,
@@ -80,7 +84,8 @@ Respond with a JSON object with two keys: "rewrittenTitle" and "rewrittenContent
             responseModalities: ['TEXT', 'IMAGE'],
         },
     });
-    
+    console.log('[AI] Successfully generated image.');
+
     return {
       rewrittenTitle,
       rewrittenContent,

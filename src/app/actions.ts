@@ -206,7 +206,7 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
         const successfullyProcessedArticles = processedResults
             .filter(result => {
                 if (result.status === 'rejected') {
-                    console.error("Failed to process article with AI:", result.reason);
+                    console.error("Failed to process article with AI. Reason:", result.reason);
                     return false;
                 }
                 return true;
