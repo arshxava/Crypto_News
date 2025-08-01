@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useParams, notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { useArticleStore } from '@/lib/store';
 import type { Article } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,9 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 
-export default function ArticlePage() {
+export default function ArticlePage({ params }: { params: { articleId: string } }) {
     const router = useRouter();
-    const params = useParams();
     const { articleId } = params;
     const { getArticleById } = useArticleStore();
     const [article, setArticle] = useState<Article | undefined | null>(undefined); // undefined: loading, null: not found
