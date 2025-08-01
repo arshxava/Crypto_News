@@ -13,9 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 
-export default function ArticlePage({ params }: { params: { articleId: string } }) {
+export default function ArticlePage({ params: { articleId } }: { params: { articleId: string } }) {
     const router = useRouter();
-    const { articleId } = params;
     const { getArticleById } = useArticleStore();
     const [article, setArticle] = useState<Article | undefined | null>(undefined); // undefined: loading, null: not found
 
