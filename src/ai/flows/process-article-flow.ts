@@ -12,6 +12,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import OpenAI from 'openai';
 
 
 const ProcessArticleInputSchema = z.object({
@@ -32,24 +33,6 @@ export async function processArticle(input: ProcessArticleInput): Promise<Proces
   return processArticleFlow(input);
 }
 
-const rewritePrompt = ai.definePrompt({
-    name: 'rewriteArticlePrompt',
-    input: { schema: z.object({ title: z.string(), content: z.string() }) },
-    output: { schema: z.object({ rewrittenTitle: z.string(), rewrittenContent: z.string() }) },
-    prompt: `You are an expert news editor and journalist for a high-traffic online publication focused on cryptocurrency. 
-    Your task is to take an existing article and completely rewrite it to be original, insightful, and engaging for a savvy audience.
-    
-    1.  **Rewrite the Title**: Create a new, compelling, and SEO-friendly title. It should capture the essence of the article but be entirely your own words.
-    2.  **Rewrite the Content**: Rephrase, restructure, and add your own insights to the article content. Do not just summarize. The goal is to produce a unique piece of journalism that passes plagiarism checks. The rewritten content should be comprehensive, well-structured, and at least 4 paragraphs long.
-    
-    Original Title: {{{title}}}
-    
-    Original Content:
-    {{{content}}}
-    `,
-});
-
-
 const processArticleFlow = ai.defineFlow(
   {
     name: 'processArticleFlow',
@@ -58,9 +41,28 @@ const processArticleFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // Step 1: Rewrite the article title and content
-    const rewriteResult = await rewritePrompt(input);
-    const { rewrittenTitle, rewrittenContent } = rewriteResult.output!;
+    // Step 1: Rewrite the article title and content using OpenAI
+    const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    const chatCompletion = await openai.chat.completions.create({
+        messages: [
+            { role: 'system', content: `You are an expert news editor and journalist for a high-traffic online publication focused on cryptocurrency. 
+Your task is to take an existing article and completely rewrite it to be original, insightful, and engaging for a savvy audience.
+Respond with a JSON object with two keys: "rewrittenTitle" and "rewrittenContent".
+
+1.  **Rewrite the Title**: Create a new, compelling, and SEO-friendly title. It should capture the essence of the article but be entirely your own words.
+2.  **Rewrite the Content**: Rephrase, restructure, and add your own insights to the article content. Do not just summarize. The goal is to produce a unique piece of journalism that passes plagiarism checks. The rewritten content should be comprehensive, well-structured, and at least 4 paragraphs long.`},
+            { role: 'user', content: `Original Title: ${input.title}\n\nOriginal Content:\n${input.content}` }
+        ],
+        model: 'gpt-4o',
+        response_format: { type: "json_object" },
+    });
+    
+    const responseJson = JSON.parse(chatCompletion.choices[0].message.content || '{}');
+    const { rewrittenTitle, rewrittenContent } = responseJson;
+
 
     // Step 2: Generate a new image based on the new title
     const { media } = await ai.generate({
