@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview A Genkit flow for processing news articles.
+ * @fileOverview An AI flow for processing news articles.
  * It rewrites the content and title to be original and generates a new image.
  *
  * - processArticle - A function that processes a given article.
