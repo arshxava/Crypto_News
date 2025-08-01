@@ -144,6 +144,7 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
         const newsApiKey = process.env.NEWS_API_KEY;
         const cryptoPanicKey = process.env.CRYPTO_PANIC_KEY;
         const cryptoCompareKey = process.env.CRYPTO_COMPARE_KEY;
+        const geminiApiKey = process.env.GEMINI_API_KEY;
 
         const allPromises = [];
 
@@ -168,7 +169,7 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
         // Always fetch RSS articles
         allPromises.push(getRssArticles(query));
 
-        if (allPromises.length === 1) { 
+        if (allPromises.length === 1 && !geminiApiKey) { 
              return { error: "No API keys are configured for news sources. Please add at least one to your .env file." };
         }
 
@@ -189,32 +190,36 @@ export async function getArticles(query: string): Promise<{ articles?: Article[]
         const articlesToProcess = uniqueArticles.slice(0, 12);
         
         // Process articles with AI
-        const processedArticlePromises = articlesToProcess.map(article => 
-            processArticle({
-                title: article.title,
-                content: article.content,
-            }).then(processed => ({
-                ...article, // Keep original data like id, url, etc.
-                rewrittenTitle: processed.rewrittenTitle,
-                content: processed.rewrittenContent, // This is now the rewritten content
-                imageUrl: processed.generatedImageUrl,
-            }))
-        );
+        const processedArticlePromises = articlesToProcess.map(async (article) => {
+            // If there's no Gemini key, just return the original article to avoid errors.
+            if (!geminiApiKey) {
+                return article;
+            }
+            try {
+                const processed = await processArticle({
+                    title: article.title,
+                    content: article.content,
+                });
+                return {
+                    ...article, // Keep original data like id, url, etc.
+                    rewrittenTitle: processed.rewrittenTitle,
+                    content: processed.rewrittenContent, // This is now the rewritten content
+                    imageUrl: processed.generatedImageUrl,
+                };
+            } catch (error) {
+                console.error(`[AI Processing Failed] for article "${article.title}". Reason:`, error);
+                // **FALLBACK**: If AI fails, return the original article.
+                // This ensures the article is still displayed.
+                return {
+                    ...article,
+                    imageUrl: `https://placehold.co/600x400.png` // Use placeholder for consistency
+                };
+            }
+        });
 
-        const processedResults = await Promise.allSettled(processedArticlePromises);
+        const finalArticles = await Promise.all(processedArticlePromises);
 
-        const successfullyProcessedArticles = processedResults
-            .filter(result => {
-                if (result.status === 'rejected') {
-                    console.error("Failed to process article with AI. Reason:", result.reason);
-                    return false;
-                }
-                return true;
-            })
-            .map(result => (result as PromiseFulfilledResult<Article>).value);
-
-
-        return { articles: successfullyProcessedArticles };
+        return { articles: finalArticles };
 
     } catch (e: any) {
         console.error("Error fetching articles:", e.message);
