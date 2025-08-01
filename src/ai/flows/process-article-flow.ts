@@ -46,22 +46,40 @@ const processArticleFlow = ai.defineFlow(
         apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const chatCompletion = await openai.chat.completions.create({
-        messages: [
-            { role: 'system', content: `You are an expert news editor and journalist for a high-traffic online publication focused on cryptocurrency. 
+    let rewrittenTitle = '';
+    let rewrittenContent = '';
+
+    try {
+        const chatCompletion = await openai.chat.completions.create({
+            messages: [
+                { role: 'system', content: `You are an expert news editor and journalist for a high-traffic online publication focused on cryptocurrency. 
 Your task is to take an existing article and completely rewrite it to be original, insightful, and engaging for a savvy audience.
 Respond with a JSON object with two keys: "rewrittenTitle" and "rewrittenContent".
 
 1.  **Rewrite the Title**: Create a new, compelling, and SEO-friendly title. It should capture the essence of the article but be entirely your own words.
 2.  **Rewrite the Content**: Rephrase, restructure, and add your own insights to the article content. Do not just summarize. The goal is to produce a unique piece of journalism that passes plagiarism checks. The rewritten content should be comprehensive, well-structured, and at least 4 paragraphs long.`},
-            { role: 'user', content: `Original Title: ${input.title}\n\nOriginal Content:\n${input.content}` }
-        ],
-        model: 'gpt-4o',
-        response_format: { type: "json_object" },
-    });
-    
-    const responseJson = JSON.parse(chatCompletion.choices[0].message.content || '{}');
-    const { rewrittenTitle, rewrittenContent } = responseJson;
+                { role: 'user', content: `Original Title: ${input.title}\n\nOriginal Content:\n${input.content}` }
+            ],
+            model: 'gpt-4o',
+            response_format: { type: "json_object" },
+        });
+        
+        const responseContent = chatCompletion.choices[0].message.content;
+
+        if (responseContent) {
+            const responseJson = JSON.parse(responseContent);
+            rewrittenTitle = responseJson.rewrittenTitle;
+            rewrittenContent = responseJson.rewrittenContent;
+        } else {
+            throw new Error("OpenAI returned an empty response.");
+        }
+
+    } catch (e: any) {
+        console.error("Error processing article with OpenAI:", e.message);
+        console.error("Raw OpenAI response that caused error:", e.response?.data);
+        // Re-throw the error to be caught by the caller in actions.ts
+        throw new Error(`Failed to process article content with OpenAI: ${e.message}`);
+    }
 
 
     // Step 2: Generate a new image based on the new title
